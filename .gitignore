@@ -1,0 +1,10 @@
+# Streamlitの秘密情報
+.streamlit/secrets.toml
+
+# Pythonキャッシュ
+__pycache__/
+*.pyc
+
+# 環境依存ファイル・ゴミ
+.DS_Store
+Thumbs.db
