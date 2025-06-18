@@ -2,6 +2,23 @@
 # ==============================================
 import streamlit as st
 
+# ▼ Google Analytics（GA4）タグの埋め込み（unsafe_allow_html=Trueを必ず指定）
+st.markdown(
+    """
+<!-- Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-TRBGYB90K3"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-TRBGYB90K3');
+</script>
+""",
+    unsafe_allow_html=True,
+)
+
+# （以下、既存のst.set_page_configやCSS、ページ内容はそのまま続けてOK）
+
 st.set_page_config(
     page_title="AI経営コンサルタントLite（β版）",
     page_icon="📋",
