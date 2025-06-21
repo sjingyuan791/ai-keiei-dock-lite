@@ -1,26 +1,35 @@
 # -*- coding: utf-8 -*-
 # =====================================================================
 # 0_Basic_Info_Input.py
-#  AI経営診断GPT – 基本情報入力フォーム（経営改善ルート専用・UX改善版）
-#  2025-06-19  |  v1.4
-#     • プレースホルダーをより具体的な例に更新
-#     • 「会社名・屋号」の例を「サンプル株式会社」に変更
+#  AI経営診断GPT – 基本情報入力フォーム（UX抜本改善）
+#  2025-06-22 | UXリニューアル版
 # =====================================================================
 from __future__ import annotations
 
 import streamlit as st
 
-# ▼ Google Analytics（GA4）タグの埋め込み（unsafe_allow_html=Trueを必ず指定）
 st.markdown(
     """
-<!-- Google Analytics -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-TRBGYB90K3"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-  gtag('config', 'G-TRBGYB90K3');
-</script>
+<style>
+.required-label:after {
+    content: " *";
+    color: #e53935;
+    font-weight: bold;
+}
+.field-error {
+    color: #e53935;
+    font-size: 0.98em;
+    margin-top: 2px;
+    margin-bottom: 0;
+}
+@media (max-width: 700px) {
+    .block-container {
+        max-width: 98vw !important;
+        padding-left: 0.2rem !important;
+        padding-right: 0.2rem !important;
+    }
+}
+</style>
 """,
     unsafe_allow_html=True,
 )
@@ -28,10 +37,8 @@ st.markdown(
 from config import init_page
 from ui_components import show_subtitle, show_back_to_top
 
-# 1. ページ初期化（set_page_config＋共通CSS）
 init_page(title="AI経営診断 – 基本情報入力")
 
-# 2. セッションステート初期化
 if not isinstance(st.session_state.get("user_input"), dict):
     st.session_state["user_input"] = {}
 if not isinstance(st.session_state.get("errors"), dict):
@@ -42,20 +49,18 @@ errors: dict[str, str] = st.session_state["errors"]
 
 show_subtitle("🏢 基本情報入力")
 
-# 3. 企業基本情報 定義
+# 定義
 ALL_FIELDS = [
-    "会社名・屋号",
-    "業種（できるだけ詳しく）",
-    "地域",
-    "主な商品・サービス",
-    "主な顧客層",
-    "年間売上高（おおよそ）",
-    "粗利率（おおよそ）",
-    "最終利益（税引後・おおよそ）",
-    "借入金額（だいたい）",
+    ("会社名・屋号", True, "例）サンプル株式会社"),
+    ("業種（できるだけ詳しく）", True, "例）自動車整備業、IT受託開発など"),
+    ("地域", True, "例）東京都新宿区"),
+    ("主な商品・サービス", True, "例）自動車修理、ケーキ販売など"),
+    ("主な顧客層", True, "例）地域の一般消費者"),
+    ("年間売上高（おおよそ）", False, "例）10,000,000（円）"),
+    ("粗利率（おおよそ）", False, "例）30.5（％）"),
+    ("最終利益（税引後・おおよそ）", False, "例）1,000,000（円）"),
+    ("借入金額（だいたい）", False, "例）5,000,000（円）"),
 ]
-REQUIRED_FIELDS = ALL_FIELDS[:5]
-# 粗利率を除外した金額項目のみ
 INT_FIELDS = [
     "年間売上高（おおよそ）",
     "最終利益（税引後・おおよそ）",
@@ -63,11 +68,10 @@ INT_FIELDS = [
 ]
 JP_NUM_MAP = str.maketrans("０１２３４５６７８９", "0123456789")
 
-for k in ALL_FIELDS:
+for k, *_ in ALL_FIELDS:
     user_input.setdefault(k, "")
 
 
-# 4. バリデーションユーティリティ
 def _to_half(v: str) -> str:
     return v.replace(",", "").translate(JP_NUM_MAP).strip()
 
@@ -88,78 +92,110 @@ def _is_percent(v: str) -> bool:
         return False
 
 
-def validate_inputs() -> dict[str, str]:
-    e: dict[str, str] = {}
-    # 企業基本情報必須チェック
-    for k in REQUIRED_FIELDS:
-        if not str(user_input[k]).strip():
-            e[k] = "必須入力です"
-    # 数値チェック
-    for k in INT_FIELDS:
-        v = str(user_input[k]).strip()
+def validate_field(k: str, v: str) -> str:
+    if k in [f for f, req, _ in ALL_FIELDS if req]:
+        if not v.strip():
+            return "必須入力です"
+    if k in INT_FIELDS:
         if v and not _is_int(v):
-            e[k] = "整数で入力してください"
-    # 粗利率％チェック
-    v = str(user_input["粗利率（おおよそ）"]).strip()
-    if v and not _is_percent(v):
-        e["粗利率（おおよそ）"] = "0〜100 の数値（％）で入力してください"
-    # 課題入力は後段でチェック
+            return "整数で入力"
+    if k == "粗利率（おおよそ）":
+        if v and not _is_percent(v):
+            return "0〜100の数値(％)"
+    return ""
+
+
+def validate_all() -> dict[str, str]:
+    e = {}
+    for k, req, _ in ALL_FIELDS:
+        v = user_input[k]
+        msg = validate_field(k, v)
+        if msg:
+            e[k] = msg
+    # 経営の問題点チェック
+    if not user_input.get("経営の問題点", "").strip():
+        e["経営の問題点"] = "必須入力です"
     return e
 
 
-# 5. フォーム表示＆保存処理
+# ===== フォーム表示 =====
 with st.form("form_basic_info"):
-    # 5-1: 企業情報セクション
     st.markdown("### 企業情報")
-    col1, col2 = st.columns(2, gap="large")
-    with col1:
-        for key, label, placeholder in [
-            ("会社名・屋号", "会社名・屋号*", "例）サンプル株式会社"),
-            ("業種（できるだけ詳しく）", "業種*", "出来るだけ詳しく"),
-            ("地域", "地域*", "例）東京都新宿区"),
-            ("主な商品・サービス", "主な商品・サービス*", "出来るだけ詳しく"),
-        ]:
-            user_input[key] = st.text_input(
-                label,
-                value=str(user_input[key]),
-                help=errors.get(key, ""),
-                placeholder=placeholder,
+    for key, required, placeholder in ALL_FIELDS:
+        label = (
+            f"{key}" if not required else f'<span class="required-label">{key}</span>'
+        )
+        user_input[key] = st.text_input(
+            label=label if not required else "",
+            value=str(user_input[key]),
+            help=None,
+            placeholder=placeholder,
+            key=f"input_{key}",
+            label_visibility="visible" if not required else "collapsed",
+        )
+        # 必須ラベル
+        if required:
+            st.markdown(
+                f'<label class="required-label" style="font-size:1em;">{key}</label>',
+                unsafe_allow_html=True,
             )
-    with col2:
-        for key, label, placeholder in [
-            ("主な顧客層", "主な顧客層*", "例）地域の一般消費者"),
-            ("年間売上高（おおよそ）", "年間売上高", "例）10,000,000（単位：円）"),
-            ("粗利率（おおよそ）", "粗利率（％）", "例）30.5（単位：％）"),
-            ("最終利益（税引後・おおよそ）", "最終利益", "例）1,000,000（単位：円）"),
-            ("借入金額（だいたい）", "借入金額", "例）5,000,000（単位：円）"),
-        ]:
-            user_input[key] = st.text_input(
-                label,
-                value=str(user_input[key]),
-                help=errors.get(key, ""),
-                placeholder=placeholder,
-            )
+        # エラー表示
+        err = errors.get(key, "")
+        if err:
+            st.markdown(f'<div class="field-error">{err}</div>', unsafe_allow_html=True)
 
-    # 5-2: 課題入力セクション（フォーム下部へ移動）
-    st.markdown("### 📋 経営の問題点*")
+    # 経営の問題点
+    st.markdown(
+        "### 📋 経営の問題点<span style='color:#e53935;'>*</span>",
+        unsafe_allow_html=True,
+    )
     user_input["経営の問題点"] = st.text_area(
         "今の経営で困っていること、悩んでいること、改善したいことがあれば、どんなことでも具体的にご記入ください。",
         value=user_input.get("経営の問題点", ""),
-        help=errors.get("経営の問題点", ""),
+        key="input_経営の問題点",
         placeholder="例）月の売上変動が大きく、在庫が不足しがちでキャッシュが圧迫されています",
     )
+    if errors.get("経営の問題点"):
+        st.markdown(
+            f'<div class="field-error">{errors["経営の問題点"]}</div>',
+            unsafe_allow_html=True,
+        )
+
+    st.info("保存後、画面右上『次へ ▶』で経営診断ステップに進めます。")
 
     submitted = st.form_submit_button("保存")
 
+# ===== リアルタイムバリデーション（変更検知） =====
+# すべてのフィールドでvalidateを即時反映
+for k, _, _ in ALL_FIELDS:
+    err = validate_field(k, user_input[k])
+    if err:
+        errors[k] = err
+    elif k in errors:
+        errors.pop(k)
+err_prob = validate_field("経営の問題点", user_input.get("経営の問題点", ""))
+if err_prob:
+    errors["経営の問題点"] = err_prob
+elif "経営の問題点" in errors:
+    errors.pop("経営の問題点")
+
+# ===== 保存ボタン処理 =====
 if submitted:
     errors.clear()
-    errors.update(validate_inputs())
-    # 課題は必須チェック
-    if not user_input.get("経営の問題点", "").strip():
-        errors["経営の問題点"] = "必須入力です"
+    errors.update(validate_all())
     if errors:
-        missing = "、".join(f"『{k}』" for k in errors)
-        st.error(f"⚠️ 入力に不備があります → {missing} を確認してください。")
+        # 最初のエラー項目へ自動スクロールJS
+        first_error = next(iter(errors))
+        st.markdown(
+            f"""
+            <script>
+            var errorElem = window.parent.document.querySelector('div.field-error');
+            if(errorElem){{ errorElem.scrollIntoView({{behavior:"smooth",block:"center"}}); }}
+            </script>
+        """,
+            unsafe_allow_html=True,
+        )
+        st.error("⚠️ 入力内容に不備があります。赤字メッセージをご確認ください。")
         st.session_state["errors"] = errors
     else:
         # 数値正規化
@@ -167,14 +203,14 @@ if submitted:
             v = str(user_input[k]).strip()
             if v:
                 user_input[k] = int(_to_half(v))
-        # 粗利率だけfloatで保存
         v = str(user_input["粗利率（おおよそ）"]).strip()
         if v:
             user_input["粗利率（おおよそ）"] = float(_to_half(v).replace("%", ""))
         st.session_state["user_input"] = user_input
         st.session_state.pop("errors", None)
-        st.success("✅ 入力内容を保存しました。")
+        st.success(
+            "✅ 入力内容を保存しました。画面右上の『次へ ▶』ボタンで次ステップに進めます。"
+        )
 
-# 6. Back to Top
 if len(ALL_FIELDS) + 1 > 8:
     show_back_to_top()
