@@ -55,7 +55,12 @@ ALL_FIELDS = [
     "借入金額（だいたい）",
 ]
 REQUIRED_FIELDS = ALL_FIELDS[:5]
-INT_FIELDS = ALL_FIELDS[5:8]
+# 粗利率を除外した金額項目のみ
+INT_FIELDS = [
+    "年間売上高（おおよそ）",
+    "最終利益（税引後・おおよそ）",
+    "借入金額（だいたい）",
+]
 JP_NUM_MAP = str.maketrans("０１２３４５６７８９", "0123456789")
 
 for k in ALL_FIELDS:
@@ -124,7 +129,7 @@ with st.form("form_basic_info"):
         for key, label, placeholder in [
             ("主な顧客層", "主な顧客層*", "例）地域の一般消費者"),
             ("年間売上高（おおよそ）", "年間売上高", "例）10,000,000（単位：円）"),
-            ("粗利率（おおよそ）", "粗利率（％）", "例）30（単位：％）"),
+            ("粗利率（おおよそ）", "粗利率（％）", "例）30.5（単位：％）"),
             ("最終利益（税引後・おおよそ）", "最終利益", "例）1,000,000（単位：円）"),
             ("借入金額（だいたい）", "借入金額", "例）5,000,000（単位：円）"),
         ]:
@@ -162,6 +167,10 @@ if submitted:
             v = str(user_input[k]).strip()
             if v:
                 user_input[k] = int(_to_half(v))
+        # 粗利率だけfloatで保存
+        v = str(user_input["粗利率（おおよそ）"]).strip()
+        if v:
+            user_input["粗利率（おおよそ）"] = float(_to_half(v).replace("%", ""))
         st.session_state["user_input"] = user_input
         st.session_state.pop("errors", None)
         st.success("✅ 入力内容を保存しました。")
