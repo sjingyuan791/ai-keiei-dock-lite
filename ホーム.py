@@ -144,7 +144,7 @@ AIがあなたの会社専用の経営改善策を提案し、<br>
 
   <h4 style="margin-top:1.2rem;">🚀 ご利用ステップ</h4>
   <ul class="step-list">
-    <li><b>Step&nbsp;1：</b>「基本情報入力」タブで会社プロフィールと問題点を入力</li>
+    <li><b>Step&nbsp;1：</b>サイドバーから「基本情報入力」で会社情報と問題点を入力</li>
     <li><b>Step&nbsp;2：</b>「AI経営診断」タブでAIが経営改善策の提案</li>
     <li><b>Step&nbsp;3：</b>「PDF出力」タブでレポートをダウンロード</li>
   </ul>
