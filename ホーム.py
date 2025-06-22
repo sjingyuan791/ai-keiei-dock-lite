@@ -1,8 +1,11 @@
 # main.py  ― Notionライクなトップページ
 # ==============================================
 import streamlit as st
+from config import init_page
 
-# ▼ Google Analytics（GA4）タグの埋め込み（unsafe_allow_html=Trueを必ず指定）
+init_page(title="AI経営コンサルタントLite（β版）", layout="centered")
+
+# ▼ Google Analytics（GA4）タグ
 st.markdown(
     """
 <!-- Google Analytics -->
@@ -15,15 +18,6 @@ st.markdown(
 </script>
 """,
     unsafe_allow_html=True,
-)
-
-# （以下、既存のst.set_page_configやCSS、ページ内容はそのまま続けてOK）
-
-st.set_page_config(
-    page_title="AI経営コンサルタントLite（β版）",
-    page_icon="📋",
-    layout="centered",
-    initial_sidebar_state="expanded",
 )
 
 # ---------- グローバル CSS  --------------------------------

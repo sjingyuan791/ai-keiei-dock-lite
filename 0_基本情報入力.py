@@ -2,12 +2,18 @@
 # =====================================================================
 # 0_Basic_Info_Input.py
 #  AI経営診断GPT – 基本情報入力フォーム（UX抜本改善）
-#  2025-06-22 | UXリニューアル版
+#  2025-06-22 | UXリニューアル版 + 粗利率小数点・全角完全対応
 # =====================================================================
 from __future__ import annotations
 
 import streamlit as st
+from config import init_page
+from ui_components import show_subtitle, show_back_to_top
 
+# ======= ここが最重要！！必ず最初 =======
+init_page(title="AI経営診断 – 基本情報入力")
+
+# -- ここから下にst.markdown等を書く --
 st.markdown(
     """
 <style>
@@ -66,14 +72,18 @@ INT_FIELDS = [
     "最終利益（税引後・おおよそ）",
     "借入金額（だいたい）",
 ]
-JP_NUM_MAP = str.maketrans("０１２３４５６７８９", "0123456789")
+# --- 全角数字・全角小数点・全角カンマ→半角変換（小数点・カンマも！）
+JP_NUM_MAP = str.maketrans("０１２３４５６７８９．，", "0123456789..")
 
 for k, *_ in ALL_FIELDS:
     user_input.setdefault(k, "")
 
 
 def _to_half(v: str) -> str:
-    return v.replace(",", "").translate(JP_NUM_MAP).strip()
+    """
+    全角数字→半角、小数点（．）→半角（.）、カンマ（，）→除去
+    """
+    return v.replace(",", "").replace("，", "").translate(JP_NUM_MAP).strip()
 
 
 def _is_int(v: str) -> bool:
@@ -122,24 +132,16 @@ def validate_all() -> dict[str, str]:
 with st.form("form_basic_info"):
     st.markdown("### 企業情報")
     for key, required, placeholder in ALL_FIELDS:
-        label = (
-            f"{key}" if not required else f'<span class="required-label">{key}</span>'
-        )
+        # ラベルをそのまま上に表示。必須項目は * をつける
+        label = f"{key}{' *' if required else ''}"
         user_input[key] = st.text_input(
-            label=label if not required else "",
+            label=label,
             value=str(user_input[key]),
-            help=None,
             placeholder=placeholder,
             key=f"input_{key}",
-            label_visibility="visible" if not required else "collapsed",
+            label_visibility="visible",
         )
-        # 必須ラベル
-        if required:
-            st.markdown(
-                f'<label class="required-label" style="font-size:1em;">{key}</label>',
-                unsafe_allow_html=True,
-            )
-        # エラー表示
+        # エラー表示のみ下に
         err = errors.get(key, "")
         if err:
             st.markdown(f'<div class="field-error">{err}</div>', unsafe_allow_html=True)
@@ -161,9 +163,10 @@ with st.form("form_basic_info"):
             unsafe_allow_html=True,
         )
 
-    st.info("保存後、画面右上『次へ ▶』で経営診断ステップに進めます。")
+    st.info("保存後、サイドバーの『AI経営診断』タブから診断ステップに進めます。")
 
     submitted = st.form_submit_button("保存")
+
 
 # ===== リアルタイムバリデーション（変更検知） =====
 # すべてのフィールドでvalidateを即時反映
@@ -208,9 +211,7 @@ if submitted:
             user_input["粗利率（おおよそ）"] = float(_to_half(v).replace("%", ""))
         st.session_state["user_input"] = user_input
         st.session_state.pop("errors", None)
-        st.success(
-            "✅ 入力内容を保存しました。画面右上の『次へ ▶』ボタンで次ステップに進めます。"
-        )
+        st.success("✅ 入力内容を保存しました。AI経営診断にお進みください。")
 
 if len(ALL_FIELDS) + 1 > 8:
     show_back_to_top()

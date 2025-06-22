@@ -302,9 +302,21 @@ elif step == 3:
         '<div class="beauty-card"><b>🔍 AIからの質問</b><br>経営状況を深掘りする追加ヒアリングを自動生成。</div>',
         unsafe_allow_html=True,
     )
-    questions = deep_dive_questions_ai(st.session_state["user_input"])
-    st.session_state["deep_dive_questions"] = questions
+    # すでにsessionに質問があればそれを使い、なければ初回のみ生成
+    if (
+        "deep_dive_questions" in st.session_state
+        and st.session_state["deep_dive_questions"]
+    ):
+        questions = st.session_state["deep_dive_questions"]
+    else:
+        with st.spinner("AIが質問を自動生成中..."):
+            questions = deep_dive_questions_ai(st.session_state["user_input"])
+        st.session_state["deep_dive_questions"] = questions
+
     st.markdown("<div style='margin:1.4em 0;'></div>", unsafe_allow_html=True)
+
+    # 回答セッションは必ずdictで
+    deep_dive_answers = st.session_state.get("deep_dive_answers") or {}
 
     # ここからformでまとめる
     with st.form(key="deep_dive_form"):
@@ -323,16 +335,23 @@ elif step == 3:
                 unsafe_allow_html=True,
             )
             st.text_area(
-                "回答を入力", key=f"qq_{i}", value=st.session_state.get(f"qq_{i}", "")
+                "回答を入力",
+                key=f"qq_{i}",
+                value=st.session_state.get(
+                    f"qq_{i}",
+                    deep_dive_answers.get(f"qq_{i}", ""),
+                ),
             )
         submitted = st.form_submit_button("📝 回答を保存")
         if submitted:
-            ans = {
-                f"qq_{i}": st.session_state.get(f"qq_{i}")
-                for i in range(1, len(questions) + 1)
-            }
-            st.session_state["deep_dive_answers"] = ans
+            with st.spinner("保存中..."):
+                ans = {
+                    f"qq_{i}": st.session_state.get(f"qq_{i}")
+                    for i in range(1, len(questions) + 1)
+                }
+                st.session_state["deep_dive_answers"] = ans
             st.success("✅ 回答を保存しました。次のステップへお進みください。")
+
 
 elif step == 4:
     st.markdown(
