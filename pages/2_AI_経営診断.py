@@ -284,10 +284,13 @@ if step == 2:
         st.warning("⚠️ 先に『基本情報入力』を行ってください。")
     else:
         if st.button("▶ AI実行", key="run_extenv", help="外部環境のAI分析を開始"):
-            with st.spinner("分析中…"):
-                st.session_state["external_output"] = (
-                    show_external_environment_analysis_ai(user_input)
-                )
+            try:  # ★ 追加: 例外を捕捉して画面に表示
+                with st.spinner("分析中…"):
+                    raw = show_external_environment_analysis_ai(user_input)
+                    st.session_state["external_output"] = raw
+            except Exception as e:
+                st.exception(e)
+                st.stop()
         output = st.session_state.get("external_output", "")
         if output:
             display_external_analysis(output)
