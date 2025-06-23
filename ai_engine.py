@@ -61,25 +61,6 @@ def run_gpt(
 # ======================================================================
 import openai
 import streamlit as st
-
-
-def show_external_environment_analysis_ai(user_input: dict) -> str:
-    c = lambda k, d="未入力": user_input.get(k, d)
-    # 各観点名・英語名セット
-    aspects = [
-        ("政治・制度", "Politics"),
-        ("経済", "Economy"),
-        ("社会・文化", "Society / Culture"),
-        ("技術", "Technology"),
-        ("業界構造", "Industry Structure"),
-        ("競合ポジション", "Competition Position"),
-    ]
-
-    # 1観点ごとのプロンプト生成関数
-
-
-import openai
-import streamlit as st
 import time
 
 
